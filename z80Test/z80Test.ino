@@ -8,13 +8,26 @@ const int DATA_PINS = 30;
 const int ADDRESS_LOW = 2;
 const int ADDRESS_HIGH = 40;
 
+const int MEM_REQ = 21;
+const int M1 = 20;
+const int READ = 19;
+const int WRITE = 18;
+
+
 int clockState = LOW;             // clockState used to set the CLK
 
 // the follow variables is a long because the time, measured in miliseconds,
 // will quickly become a bigger number than can be stored in an int.
-long interval = 10;           // clock interval (milliseconds)
+long interval = 1000;           // clock interval (milliseconds)
 long previousMillis = 0;        // will store last time LED was updated
+long clockCount = 0;
+int memReqState = HIGH;
+int m1State = HIGH;
+int readState = HIGH;
 
+// memory locations
+int memorySize = 5;
+byte memory[] = {0xC3, 0xFF, 0xFF,0x3A,0x10 };
 
 void setup() {
   
@@ -24,6 +37,9 @@ void setup() {
   
   //Set the CLK pin to OUTPUT
   pinMode(CLOCK_PIN, OUTPUT); 
+  pinMode(MEM_REQ, INPUT);
+  pinMode(M1, INPUT);
+  pinMode(READ, INPUT);
   
   //Set the address pins to INPUT
   for (addressPin=ADDRESS_LOW; addressPin<ADDRESS_LOW+8; addressPin++) {
@@ -71,9 +87,38 @@ void loop()
 
     // set the LED with the ledState of the variable:
     digitalWrite(CLOCK_PIN, clockState);
-    displayAddress();
     
+    Serial.print("Clock counter = ");
+    Serial.println(clockCount++);
+    Serial.print("Address bus = ");
+    int addressValue = digitalBinaryPinsToInt(ADDRESS_LOW);
+    
+    if (isMemReq()) {
+      Serial.println("Memory Request Active");
+    }
+    if (isM1()) {
+      Serial.println("M1 Active");
+    }
+    if (isRead()) {
+      Serial.println("Read Active");
+    }
+        if (isWrite()) {
+      Serial.println("Write Active");
+    }
+    
+    if (isMemReq()) {
+      if (addressValue < memorySize) {
+        writeByteToBinaryPins(memory[addressValue], DATA_PINS);
+        Serial.print("Written to data = ");
+        Serial.println(memory[addressValue]);
+      }
+    }
+    
+    
+    Serial.println("--------");
   }
+ 
+ 
  
 }
 
@@ -91,7 +136,6 @@ void loop()
       binaryDigit = binaryDigit * 2;
       position--;
     }
-    Serial.println();
     for (int i=0; i<8;i++) {
       Serial.print(binary[i]);
     }
@@ -99,11 +143,32 @@ void loop()
     Serial.println(value);
     return value;
   }
-
-
-  void displayAddress()
-  {
-
-    digitalBinaryPinsToInt(ADDRESS_LOW);
-
+  
+  boolean isMemReq() {
+    return !digitalRead(MEM_REQ);
   }
+  
+  boolean isM1() {
+    return !digitalRead(M1);
+  }
+  
+  boolean isRead() {
+    return !digitalRead(READ);
+  }
+    boolean isWrite() {
+    return !digitalRead(WRITE);
+  }
+  
+  void writeByteToBinaryPins(byte value, int startPin) {
+    int binaryDigit =1;
+    for (int pin = startPin; pin < startPin+8; pin++) {
+      if (value % binaryDigit) {
+        digitalWrite(pin, HIGH);
+      } else {
+        digitalWrite(pin, LOW);
+      }
+      binaryDigit = binaryDigit * 2;
+    }
+  }
+        
+    
