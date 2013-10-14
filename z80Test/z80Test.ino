@@ -104,6 +104,6 @@ void loop()
   void displayAddress()
   {
 
-    digitalBinaryPinsToInt(2);
+    digitalBinaryPinsToInt(ADDRESS_LOW);
 
   }
