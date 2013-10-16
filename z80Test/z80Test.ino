@@ -26,8 +26,8 @@ int m1State = HIGH;
 int readState = HIGH;
 
 // memory locations
-int memorySize = 5;
-byte memory[] = {0xC3, 0xFF, 0xFF,0x3A,0x10 };
+const int MEMORY_SIZE = 8;
+byte memory[] = {0xC3, 0xFF, 0xFF,0x3A,0x10, 0x0, 0x0, 0x0, 0x0 };
 
 void setup() {
   
@@ -105,9 +105,17 @@ void loop()
         if (isWrite()) {
       Serial.println("Write Active");
     }
-    
-    if (isMemReq()) {
-      if (addressValue < memorySize) {
+    //Simulate read from memory
+    if (isMemReq() && isRead()) {
+      if (addressValue < MEMORY_SIZE) {
+        writeByteToBinaryPins(memory[addressValue], DATA_PINS);
+        Serial.print("Written to data = ");
+        Serial.println(memory[addressValue]);
+      }
+    }
+    //Simulate write to memory
+    if (isMemReq() && isWrite()) {
+      if (addressValue < MEMORY_SIZE) {
         writeByteToBinaryPins(memory[addressValue], DATA_PINS);
         Serial.print("Written to data = ");
         Serial.println(memory[addressValue]);
@@ -162,6 +170,7 @@ void loop()
   void writeByteToBinaryPins(byte value, int startPin) {
     int binaryDigit =1;
     for (int pin = startPin; pin < startPin+8; pin++) {
+      pinMode(pin, OUTPUT);
       if (value % binaryDigit) {
         digitalWrite(pin, HIGH);
       } else {
@@ -169,6 +178,23 @@ void loop()
       }
       binaryDigit = binaryDigit * 2;
     }
+  }
+  
+  void writeByteToMemoryArrayFromDataPins(byte memory[], int location, int startPin) {
+    int binaryDigit =1;
+    int value = 0;
+    if (location >= MEMORY_SIZE) return;
+    
+    for (int pin = startPin; pin < startPin+8; pin++) {
+         pinMode(pin, INPUT);
+         if (digitalRead(pin) == HIGH) {
+           value = value + binaryDigit;
+         }
+         binaryDigit = binaryDigit * 2;
+    }
+    
+    memory[location] = value;
+    
   }
         
     
